@@ -207,8 +207,10 @@ void MainWindow::on_Measure_clicked()
     MultiplierMax=ui->MultiplierFinalComboBox->currentIndex();
     _Point=ui->PointsLineEdit->text().toInt();
 
-    if (ui->BasicLineEdit->displayText().isEmpty())
+    if (ui->BasicLineEdit->displayText().isEmpty()){
         _min=100000;
+        ui->BasicLineEdit->setText("100");
+        ui->MultiplierBasicComboBox->setCurrentIndex(0);;}
     else
     {
     switch(MultiplierMin)
@@ -228,8 +230,10 @@ void MainWindow::on_Measure_clicked()
 
     }}
 
-if (ui->FinalLineEdit->displayText().isEmpty())
+    if (ui->FinalLineEdit->displayText().isEmpty()){
         _max=1000000000;
+        ui->FinalLineEdit->setText("1");
+        ui->MultiplierFinalComboBox->setCurrentIndex(2);}
 else
 {
     switch(MultiplierMax)
@@ -248,6 +252,7 @@ else
 if (ui->PointsLineEdit->displayText().isEmpty()){
 
     _Point=201;
+     ui->PointsLineEdit->setText("201");
 
 
 }
@@ -342,7 +347,7 @@ void MainWindow::drawPlot(){
         ui->plot->graph(4)->addData(_x,_DP);
     if (ui->DPCheckBox->checkState()==Qt::Unchecked)
         ui->plot->graph(4)->data().data()->clear();
-    if (ui->S11CheckBox->checkState()==Qt::Unchecked | ui->S12checkBox->checkState()==Qt::Unchecked | ui->S21CheckBox->checkState()==Qt::Unchecked | ui->S22checkBox->checkState()==Qt::Unchecked |ui->DPCheckBox->checkState()==Qt::Unchecked)
+    if (ui->S11CheckBox->checkState()==Qt::Unchecked & ui->S12checkBox->checkState()==Qt::Unchecked & ui->S21CheckBox->checkState()==Qt::Unchecked & ui->S22checkBox->checkState()==Qt::Unchecked & ui->DPCheckBox->checkState()==Qt::Unchecked)
     {
         QMessageBox::information(this, tr("ERROR"), tr("Не один из параметров не выбран"));
     }
