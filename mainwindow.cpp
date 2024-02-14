@@ -6,16 +6,29 @@
 #include <QDebug>
 #include <QAxBase>
 #include <QtWidgets>
+#include <QIntValidator>
+#include <QValidator>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    QRegExp regExpHz("1|[1-9]\\d{0,4}");
+    ui->BasicLineEdit->setValidator(new QRegExpValidator(regExpHz, this));
+    ui->FinalLineEdit->setValidator(new QRegExpValidator(regExpHz, this));
+    QRegExp regExpP("2|[1-9]\\d{0,4}");
+    ui->PointsLineEdit->setValidator(new QRegExpValidator(regExpP, this));
 
-    ui->BasicLineEdit->setValidator(new QIntValidator(0, 1000, this));
-    ui->FinalLineEdit->setValidator(new QIntValidator(0, 1000, this));
-    ui->PointsLineEdit->setValidator(new QIntValidator(2, 2002, this));
+
+
+
+    // ui->BasicLineEdit->setValidator(new QIntValidator(500, 1000, ui->BasicLineEdit));
+    // ui->FinalLineEdit->setValidator(new QIntValidator(2, 1000, ui->FinalLineEdit));
+    // ui->PointsLineEdit->setValidator(new QIntValidator(2, 2002, ui->PointsLineEdit));
+
+
+
     setupVNA();
     setupPlot();
     connect(ui->plot->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(slotRangeChanged(QCPRange)));
@@ -34,7 +47,7 @@ void MainWindow::DoubleClickPlot(QMouseEvent* event){
         ui->plot->rescaleAxes();
       ui->plot->replot();
       ui->plot->update();
-    qDebug()<<"saddsajnklnjel";
+
 
 }
 
@@ -241,6 +254,13 @@ else
         break;
     }
 }
+if (ui->PointsLineEdit->displayText().isEmpty()){
+
+    _Point=201;
+
+
+}
+
 
     setupSparametr();
     drawPlot();
