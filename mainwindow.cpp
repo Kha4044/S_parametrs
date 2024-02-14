@@ -17,65 +17,46 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->FinalLineEdit->setValidator(new QIntValidator(0, 1000, this));
     ui->PointsLineEdit->setValidator(new QIntValidator(2, 2002, this));
     setupVNA();
-    connect(ui->plot->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(xAxisChanged(QCPRange)));
-    connect(ui->plot->yAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(yAxisChanged(QCPRange)));
-
+    setupPlot();
+    connect(ui->plot->xAxis, SIGNAL(rangeChanged(QCPRange)), this, SLOT(slotRangeChanged(QCPRange)));
+    connect(ui->plot, SIGNAL(mouseDoubleClick(QMouseEvent*)), this, SLOT(DoubleClickPlot(QMouseEvent*)));
 
 
 }
+void MainWindow::slotRangeChanged(const QCPRange &newRange)
+{
+    ui->plot->xAxis->setRangeLower(_min);
+    // ui->plot->xAxis->setRangeUpper(_max);
 
+}
+void MainWindow::DoubleClickPlot(QMouseEvent* event){
+      Q_UNUSED(event)
+        ui->plot->rescaleAxes();
+      ui->plot->replot();
+      ui->plot->update();
+    qDebug()<<"saddsajnklnjel";
+
+}
 
 void MainWindow::setupVNA()
 {
-
     S2VNA->querySubObject("SCPI")->querySubObject("SYSTem")->dynamicCall("PRESet()");//перезагрузка
     S2VNA->querySubObject("SCPI")->querySubObject("DISPlay")->querySubObject("WINDow(1)")->dynamicCall("ACTivate()");//назначение акивного канала
     S2VNA->querySubObject("SCPI")->querySubObject("INITiate(1)")->setProperty("CONTinuous",1);//нужен для тригера
     S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("PARameter")->setProperty("COUNt",4);//установка количества измеряемых графиков
-    // Эквивалентная COM команда
-
-    //     SCPI.IEEE4882.OPC
-
-    //             Синтаксис
-
-    //     Value = app.SCPI.IEEE4882.OPC
-
-    //               app.SCPI.IEEE4882.OPC = Dummy
-// app.SCPI.TRIGger.SEQuence.SINGle
-
+    S2VNA->querySubObject("SCPI")->querySubObject("TRIGger")->querySubObject("SEQuence")->setProperty("SOURce","BUS");//Установка срабатывания тригера от приложения
 }
 
 void MainWindow::setupSparametr()
-{    S2VNA->querySubObject("SCPI")->querySubObject("TRIGger")->querySubObject("SEQuence")->setProperty("SOURce","BUS");//Установка срабатывания тригера от приложения
-
+{
     int TypeMesuare=ui->TypeComboBox->currentIndex();
-    S2VNA->querySubObject("SCPI")->querySubObject("TRIGger")->querySubObject("SEQuence")->dynamicCall("SINGle()");
-    S2VNA->querySubObject("SCPI")->querySubObject("IEEE4882")->dynamicCall("OPC");
-
     S2VNA->querySubObject("SCPI")->querySubObject("SENSe(1)")->querySubObject("FREQuency")->setProperty("STARt", _min);
-
     S2VNA->querySubObject("SCPI")->querySubObject("SENSe(1)")->querySubObject("FREQuency")->setProperty("STOP", _max);
-
     S2VNA->querySubObject("SCPI")->querySubObject("SENSe(1)")->querySubObject("SWEep")->setProperty("POINts",_Point);
-
-
     S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("PARameter(1)")->setProperty("DEFine","S11");
-
-
     S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("PARameter(2)")->setProperty("DEFine","S12");
-
     S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("PARameter(3)")->setProperty("DEFine","S21");
-
     S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("PARameter(4)")->setProperty("DEFine","S22");
-    // Амп лог MLOGarithmic
-    //     КСВН SWR
-    //         Фаза PHASe
-    //             Фаза 180
-    //                 ГВЗ GDELog
-    //                     АМП лин
-    //                         Реал REAL
-    //                             МНим IMAGinary
-    // const char *_AmpLog="MLOGarithmic", *_KSVN="SWR", *_PHASe="PHASe",*Fase180="UPHase", *_GVZ="GDEL", *_AmpLin="MLINear", *_REAL="REAL", *_MNIM="IMAGinary";
     switch  (TypeMesuare){
     case 0:
     S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("PARameter(1)")->dynamicCall("SElect()");
@@ -161,7 +142,8 @@ void MainWindow::setupSparametr()
         S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("SELected")->setProperty("FORMat", _MNIM);
         break;
     }
-
+    S2VNA->querySubObject("SCPI")->querySubObject("TRIGger")->querySubObject("SEQuence")->dynamicCall("SINGle()");// генерацяя синала
+    S2VNA->querySubObject("SCPI")->querySubObject("IEEE4882")->dynamicCall("OPC");// ожидание окончния сканирования
     QAxObject *pDataS11 = S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("TRACe(1)")->querySubObject("DATA");
     QAxObject *pDataS12 = S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("TRACe(2)")->querySubObject("DATA");
     QAxObject *pDataS21 = S2VNA->querySubObject("SCPI")->querySubObject("CALCulate(1)")->querySubObject("TRACe(3)")->querySubObject("DATA");
@@ -171,10 +153,7 @@ void MainWindow::setupSparametr()
     QVariant DataS21 = pDataS21->dynamicCall("FDATa");
     QVariant DataS22 = pDataS22->dynamicCall("FDATa");
 
-
-
     if (DataS11.canConvert<QVariantList>())
-
     {
 
         QVariantList dataListS11 = DataS11.toList();
@@ -183,19 +162,13 @@ void MainWindow::setupSparametr()
         QVariantList dataListS22 = DataS22.toList();
 
         for ( int i = 0; i < dataListS11.length()/2; i++)
-
-
         {
 
             _yS11.push_back(dataListS11[i*2].toDouble());
             _yS12.push_back(dataListS12[i*2].toDouble());
             _yS21.push_back(dataListS21[i*2].toDouble());
             _yS22.push_back(dataListS22[i*2].toDouble());
-
-
             _x.push_back(i);
-
-
         }
         qDebug() << "s11" << "\t";
         qDebug() << _yS11 << "\t";
@@ -205,26 +178,25 @@ void MainWindow::setupSparametr()
         qDebug() << _yS21 << "\t";
         qDebug() << "s22" << "\t";
         qDebug() << _yS22 << "\t";
-
-
-    }
-
+}
     else
-
-
     {
 
         qDebug() << "Device not ready";
 
     }
 }
-
-
 void MainWindow::on_Measure_clicked()
 {
-    ui->plot->clearGraphs();
-    ui->plot->replot();
+
     int MultiplierMin, MultiplierMax;
+    _yS11.clear();
+    _yS12.clear();
+    _yS21.clear();
+    _yS22.clear();
+    _x.clear();
+    // _min.clear();
+    // _max.clear();
     _min=ui->BasicLineEdit->text().toFloat();
     _max=ui->FinalLineEdit->text().toFloat();
     MultiplierMin=ui->MultiplierBasicComboBox->currentIndex();
@@ -269,17 +241,18 @@ else
         break;
     }
 }
+
     setupSparametr();
-    setupPlot();
+    drawPlot();
 
 
-    ui->plot->xAxis->setRange(_min, _max);
-    ui->plot->yAxis->setRange(-50, 50);
+
 }
 
 
 void MainWindow::setupPlot()
 {
+
     ui->plot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom));
     ui->plot->legend->setVisible(true);
     QFont legendFont = font();
@@ -287,9 +260,6 @@ void MainWindow::setupPlot()
     ui->plot->legend->setFont(legendFont);
     ui->plot->legend->setBrush(QBrush(QColor(255,255,255,230)));
     ui->plot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
-
-
-
     ui->plot->addGraph();
     ui->plot->graph()->setPen(QPen(Qt::blue));
     ui->plot->graph()->setName(QString("S11"));
@@ -305,48 +275,77 @@ void MainWindow::setupPlot()
     ui->plot->addGraph();
     ui->plot->graph()->setPen(QPen(Qt::cyan));
     ui->plot->graph()->setName(QString("ДП"));
+    ui->plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
 
+
+
+
+}
+
+
+void MainWindow::drawPlot(){
+    ui->plot->graph(0)->data().data()->clear();
+    ui->plot->graph(1)->data().data()->clear();
+    ui->plot->graph(2)->data().data()->clear();
+    ui->plot->graph(3)->data().data()->clear();
+    ui->plot->graph(4)->data().data()->clear();
+
+
+
+    // ui->plot->replot();
+    ui->plot->update();
+    qDebug()<<"_min";
+    qDebug()<<_min;
     _h=(_max-_min)/_Point;
     for (int i=0; i<_Point; i++)
     {
 
         _x[i]=_min+_x[i]*_h;
 
+
     }
-    if(ui->S11CheckBox->isChecked())
+    qDebug()<<"x[0]";
+    qDebug()<<_x[0];
+    if(ui->S11CheckBox->checkState()==Qt::Checked)
         ui->plot->graph(0)->addData(_x, _yS11);
-    else
-        ui->plot->graph(0)->addData(0, 0);
-    if(ui->S21CheckBox->isChecked())
+    if (ui->S11CheckBox->checkState()==Qt::Unchecked)
+        ui->plot->graph(0)->data().data()->clear();
+
+    if(ui->S12checkBox->checkState()==Qt::Checked)
         ui->plot->graph(1)->addData(_x, _yS12);
-    else
-        ui->plot->graph(1)->addData(0,0);
-    if(ui->S12checkBox->isChecked())
+     if (ui->S12checkBox->checkState()==Qt::Unchecked)
+        ui->plot->graph(1)->data().data()->clear();
+
+    if(ui->S21CheckBox->checkState()==Qt::Checked)
         ui->plot->graph(2)->addData(_x,_yS21);
-    else
-        ui->plot->graph(2)->addData(0,0);
-    if(ui->S22checkBox->isChecked())
+      if (ui->S21CheckBox->checkState()==Qt::Unchecked)
+        ui->plot->graph(2)->data().data()->clear();
+
+    if(ui->S22checkBox->checkState()==Qt::Checked)
         ui->plot->graph(3)->addData(_x,_yS22);
-    else
-        ui->plot->graph(3)->addData(0,0);
-    if(ui->DPCheckBox->isChecked())
+    if (ui->S22checkBox->checkState()==Qt::Unchecked)
+        ui->plot->graph(3)->data().data()->clear();
+
+    if(ui->DPCheckBox->checkState()==Qt::Checked)
         ui->plot->graph(4)->addData(_x,_DP);
-    else
-        ui->plot->graph(4)->addData(0,0);
+    if (ui->DPCheckBox->checkState()==Qt::Unchecked)
+        ui->plot->graph(4)->data().data()->clear();
 
 
-    ui->plot->graph(0)->rescaleAxes();
-    ui->plot->graph(1)->rescaleAxes();
-    ui->plot->graph(2)->rescaleAxes();
-    ui->plot->graph(3)->rescaleAxes();
+    ui->plot->rescaleAxes();
+    ui->plot->replot();
+    ui->plot->update();
 
-
+    // ui->plot->graph(0)->rescaleAxes();
+    // ui->plot->graph(1)->rescaleAxes();
+    // ui->plot->graph(2)->rescaleAxes();
+    // ui->plot->graph(3)->rescaleAxes();
     ui->plot->axisRect()->setupFullAxesBox(true);
-    ui->plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+    // _x.clear();
+
+
 }
-
-
 
 
 
