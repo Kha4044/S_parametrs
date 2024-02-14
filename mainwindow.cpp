@@ -6,7 +6,7 @@
 #include <QDebug>
 #include <QAxBase>
 #include <QtWidgets>
-#include <QIntValidator>
+#include <QMessageBox>
 #include <QValidator>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -19,15 +19,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->FinalLineEdit->setValidator(new QRegExpValidator(regExpHz, this));
     QRegExp regExpP("2|[1-9]\\d{0,4}");
     ui->PointsLineEdit->setValidator(new QRegExpValidator(regExpP, this));
-
-
-
-
-    // ui->BasicLineEdit->setValidator(new QIntValidator(500, 1000, ui->BasicLineEdit));
-    // ui->FinalLineEdit->setValidator(new QIntValidator(2, 1000, ui->FinalLineEdit));
-    // ui->PointsLineEdit->setValidator(new QIntValidator(2, 2002, ui->PointsLineEdit));
-
-
 
     setupVNA();
     setupPlot();
@@ -351,7 +342,10 @@ void MainWindow::drawPlot(){
         ui->plot->graph(4)->addData(_x,_DP);
     if (ui->DPCheckBox->checkState()==Qt::Unchecked)
         ui->plot->graph(4)->data().data()->clear();
-
+    if (ui->S11CheckBox->checkState()==Qt::Unchecked | ui->S12checkBox->checkState()==Qt::Unchecked | ui->S21CheckBox->checkState()==Qt::Unchecked | ui->S22checkBox->checkState()==Qt::Unchecked |ui->DPCheckBox->checkState()==Qt::Unchecked)
+    {
+        QMessageBox::information(this, tr("ERROR"), tr("Не один из параметров не выбран"));
+    }
 
     ui->plot->rescaleAxes();
     ui->plot->replot();
